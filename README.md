@@ -1,9 +1,6 @@
-<p align="center">
-  <img src="spotify_logo.jpg" width="250" alt="Spotify Logo">
-</p>
 
 # Spotify Advanced SQL Analysis & Query Optimization
-
+![LOGO](https://github.com/smritiD24/Spotify/blob/main/LOGO_Spotify.jpg)
 ## About This Project
 
 Spotify was the most technically interesting of my three SQL projects because the dataset is already flat — one table with 24 columns covering audio features, engagement metrics, and platform data all together. That meant no JOINs to worry about, but the questions get progressively harder in terms of window functions, CTEs, and subquery logic.
