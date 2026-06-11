@@ -25,11 +25,10 @@ I used **PostgreSQL** for all queries.
 spotify-sql-analysis/
 │
 ├── README.md                        -- you're reading it
-├── spotify_logo.jpg                 -- Spotify logo
-├── schema_setup.sql                 -- table creation
-├── solutions.sql                    -- all 15 query solutions
-├── additional_problems.sql          -- 5 extra questions I added
-└── outputs/                         -- screenshots of query results
+├── spotify_logo.jpg                 -- Spotify logo                
+├── additional_problems              -- 5 extra questions I added
+├── Spotify_sql                      -- 5 extra questions I added
+
 ```
 
 ---
