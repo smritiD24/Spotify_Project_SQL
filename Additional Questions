@@ -1,0 +1,135 @@
+-- ============================================================
+-- Spotify SQL Project - Additional Problems (Q16 to Q20)
+-- Written independently after completing the core 15 questions
+-- ============================================================
+
+
+-- Q.16 Albums Where Average Energy Exceeds Average Valence
+-- -----------------------------------------------------------
+-- Energy = intensity/loudness/activity level of a track (0 to 1)
+-- Valence = musical positivity/happiness (0 to 1)
+-- Albums where avg energy > avg valence are intense but not necessarily happy.
+-- Think: heavy workout playlists, intense rock albums, aggressive rap.
+
+SELECT 
+    album,
+    ROUND(AVG(energy)::numeric, 4) AS avg_energy,
+    ROUND(AVG(valence)::numeric, 4) AS avg_valence,
+    ROUND((AVG(energy) - AVG(valence))::numeric, 4) AS energy_over_valence
+FROM spotify
+GROUP BY album
+HAVING AVG(energy) > AVG(valence)
+ORDER BY energy_over_valence DESC;
+
+-- The higher the energy_over_valence gap, the more "intense but dark" the album sounds.
+
+
+-- Q.17 Artists Who Appear in Both Singles and Full Albums
+-- -----------------------------------------------------------
+-- Some artists release standalone singles AND multi-track albums in this dataset.
+-- Finding artists in both tells you who has a diverse release strategy.
+
+WITH album_types_per_artist AS (
+    SELECT 
+        artist,
+        album_type
+    FROM spotify
+    GROUP BY artist, album_type
+)
+SELECT 
+    artist,
+    COUNT(DISTINCT album_type) AS type_count,
+    STRING_AGG(DISTINCT album_type, ', ') AS release_types
+FROM album_types_per_artist
+GROUP BY artist
+HAVING COUNT(DISTINCT album_type) >= 2  -- appears in more than one album type
+ORDER BY artist;
+
+
+-- Q.18 Most Speech-Heavy Tracks (Speechiness Outliers)
+-- -----------------------------------------------------------
+-- Speechiness detects spoken-word content in tracks.
+-- Spotify's own documentation says:
+--   > 0.66 = likely entirely spoken word (podcasts, audiobooks, poetry)
+--   0.33 - 0.66 = may contain both music and speech (rap)
+--   < 0.33 = mostly music
+-- Let's find the outliers above 0.66 and see which artists they belong to.
+
+SELECT 
+    track,
+    artist,
+    album,
+    ROUND(speechiness::numeric, 4) AS speechiness_score
+FROM spotify
+WHERE speechiness > 0.66
+ORDER BY speechiness_score DESC;
+
+-- If speechiness is very high (>0.9) it's almost certainly spoken word, not music.
+-- Interesting to see if any big music artists have tracks that cross this threshold.
+
+
+-- Q.19 Does Danceability Affect Streams? (Bucket Analysis)
+-- -----------------------------------------------------------
+-- Group tracks into Low / Medium / High danceability buckets.
+-- Compare average streams per bucket.
+-- A simple way to check whether more danceable tracks perform better on Spotify.
+
+SELECT 
+    danceability_bucket,
+    COUNT(*) AS track_count,
+    ROUND(AVG(stream)::numeric, 0) AS avg_streams,
+    ROUND(AVG(likes)::numeric, 0) AS avg_likes
+FROM (
+    SELECT 
+        track,
+        artist,
+        stream,
+        likes,
+        CASE 
+            WHEN danceability < 0.4 THEN 'Low (< 0.4)'
+            WHEN danceability BETWEEN 0.4 AND 0.7 THEN 'Medium (0.4 - 0.7)'
+            ELSE 'High (> 0.7)'
+        END AS danceability_bucket
+    FROM spotify
+    WHERE stream IS NOT NULL
+) AS bucketed
+GROUP BY danceability_bucket
+ORDER BY avg_streams DESC;
+
+-- If High danceability bucket has significantly higher avg_streams,
+-- that suggests Spotify listeners prefer danceable tracks.
+-- This kind of bucketed analysis is common in real A/B testing and product analytics.
+
+
+-- Q.20 Popular on YouTube but Underperforming on Spotify
+-- -----------------------------------------------------------
+-- Find tracks with very high YouTube views but low Spotify streams relative to their views.
+-- These are tracks that went viral visually (maybe a meme, reel, or music video)
+-- but didn't translate to audio-only listening behavior.
+
+-- Approach: Calculate a ratio of streams to views. Low ratio = YouTube-heavy track.
+-- Filter for tracks that actually have significant YouTube presence (views > 100M)
+-- to avoid noise from obscure tracks with low numbers on both sides.
+
+SELECT 
+    track,
+    artist,
+    views,
+    stream,
+    ROUND((stream::numeric / NULLIF(views, 0)), 4) AS stream_to_view_ratio
+FROM spotify
+WHERE 
+    views > 100000000          -- only tracks with 100M+ YouTube views
+    AND stream IS NOT NULL
+    AND views IS NOT NULL
+ORDER BY stream_to_view_ratio ASC  -- lowest ratio = most YouTube-heavy
+LIMIT 20;
+
+-- NULLIF(views, 0) prevents division by zero -- same guard as Q14 in solutions.
+-- Tracks at the top of this list are interesting from a marketing perspective:
+-- they had massive visual reach but listeners didn't continue engaging on Spotify.
+
+
+-- ============================================================
+-- End of Additional Problems
+-- ============================================================
